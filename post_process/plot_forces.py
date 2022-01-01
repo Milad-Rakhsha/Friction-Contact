@@ -3,7 +3,7 @@ import subprocess,re
 
 import matplotlib
 #matplotlib.use('TkAgg')
-matplotlib.use('Agg')  # Must be before importing matplotlib.pyplot or pylab!
+# matplotlib.use('Agg')  # Must be before importing matplotlib.pyplot or pylab!
 import matplotlib.pyplot as plt
 
 import numpy as np
@@ -20,7 +20,8 @@ MARKERSIZE=5
 
 
 path_DVI_python = str(sys.argv[1])
-label = str(sys.argv[2])
+# label = str(sys.argv[2])
+label = "forces"
 
 
 def prepare(path, prefix, suffix, prefix2, suffix2, pad):
@@ -48,7 +49,7 @@ def prepare(path, prefix, suffix, prefix2, suffix2, pad):
                                 c_j=c_i
                                 c_i=0
                         OUT[i,c_j*2-1]=table['Fn'][contact]
-                        OUT[i,c_j*2]=table['Ft'][contact]
+                        OUT[i,c_j*2]=np.sqrt(np.power(table['Ft1'][contact],2)+ np.power(table['Ft2'][contact],2))
 
         return OUT
 
@@ -79,13 +80,17 @@ def plot(label,DVI_F):
                         )
 
 
+        # Major ticks every 20, minor ticks every 5
+        major_ticks = np.arange(0, 0.5, 0.1)
+        minor_ticks = np.arange(0, 0.5, 0.02)
+
         ax2.legend(fancybox=True, shadow=True, ncol=1)
         ax1.legend(fancybox=True, shadow=True, ncol=1)
         ax1.set_xlim(0, 0.5)
-        ax1.set_ylim(0, 3)
+        ax1.set_ylim(0, 5)
         ax2.set_xlim(0, 0.5)
         # ax3.set_xlim(0, 0.5)
-        ax2.set_ylim(0, 1.5)
+        # ax2.set_ylim(0, 1.5)
 
         ax1.legend(loc='center left')
         ax2.legend(loc='center left')
@@ -99,10 +104,25 @@ def plot(label,DVI_F):
         # ax3.set_ylabel(r'$x(m)$',fontsize=22,)
         plt.tight_layout(pad=1.50)
 
+
+
+        ax1.set_xticks(major_ticks)
+        ax1.set_xticks(minor_ticks, minor=True)
+        ax1.grid(which='minor', alpha=0.2)
+        ax1.grid(which='major', alpha=0.5)
+        # plt.grid()
+
+
+        ax2.set_xticks(major_ticks)
+        ax2.set_xticks(minor_ticks, minor=True)
+        ax2.grid(which='minor', alpha=0.2)
+        ax2.grid(which='major', alpha=0.5)
+        # plt.grid()
+
         # ax3.yaxis.set_major_formatter(FormatStrFormatter('%.0e'))
         # ax2.set_ylabel(r'$F$')
-        plt.savefig(label+'.png')
-        #plt.show()
+        plt.savefig(os.path.join(path_DVI_python,label))
+        plt.show()
 
 
 # DEM_F=prepare(path_DEM,'F_SCM_', '.txt', False)

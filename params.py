@@ -20,6 +20,10 @@ import numpy as np
 class params:
     def __init__(self, setup):
         self.nb = setup["nb"]
+        params.slips=np.array([])
+        params.old_normals=np.array([])
+        params.old_forces=np.array([])
+        params.contact_pairs=np.array([])
         self.hdims = np.zeros((self.nb, 3), dtype='d')
         self.radius = np.zeros(self.nb, dtype='d')
         self.envelope = setup["envelope"]
@@ -45,9 +49,22 @@ class params:
         self.unique = setup["unique"]
         self.Reg_T_Dir = setup["Reg_T_Dir"]
         self.solver = setup["solver"]
-        self.eta0 = setup["eta0"]
-        self.tau_eta = setup["tau_eta"]
-        self.eta_max = setup["eta_max"]
+        if ("compatibility" in setup):
+            self.compatibility = setup["compatibility"]
+        else:
+            self.compatibility=None
+
+        if ("compatibility_tolerance" in setup):
+            self.compatibility_tolerance = setup["compatibility_tolerance"]
+        else:
+            self.compatibility_tolerance=1e-8
+
+        if ("compatibility_max_iter" in setup):
+            self.compatibility_max_iter = setup["compatibility_max_iter"]
+        else:
+            self.compatibility_max_iter=10
+
+        self.f_star=None
 
 
     def __str__(self):

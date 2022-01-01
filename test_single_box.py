@@ -31,7 +31,7 @@ def main(out_dir, push_fraction, unique, addMiddle):
     else:
         os.mkdir(out_dir)
 
-    shutil.copyfile("./test_box_on_spheres.py", out_dir+"/input.py")
+    shutil.copyfile("./test_single_box.py", out_dir+"/input.py")
 
     grav = np.array([0,0,-10.0])
     solver_params = {
@@ -52,9 +52,9 @@ def main(out_dir, push_fraction, unique, addMiddle):
         "AL_use_AugmentedLagrangian": True,
     }
 
-    setup = {"nb": 5+addMiddle,
+    setup = {"nb": 2,
         "gravity" : grav,
-        "envelope" : 1e-2,
+        "envelope" : 2e-1,
         "static_friction" : 0.5,
         "mu_tilde" : 0.2,
         "eps_0" : 0.0,
@@ -71,47 +71,31 @@ def main(out_dir, push_fraction, unique, addMiddle):
         "suffix" : ".csv",
         "unique" : unique,
         "Reg_T_Dir": False,
-        "compatibility": "incremental", #"incremental", #"old_normals", #"old_normals", #"old_slips", #None, "old_normals", "IPM", "decoupled_PD", "old_slips"
+        "compatibility": "incremental", # #"old_normals", #"old_normals", #"old_slips", #None, "old_normals", "IPM", "decoupled_PD", "old_slips"
         "compatibility_tolerance": 1e-8,
         "compatibility_max_iter": 500,
         "solver": solver_params}
 
     model_params = params(setup)
-
+    sphere_radius = 1.0
     sphere_mass = 1.0
-    sphere_radius = 0.1
-    sphere_z=-sphere_radius
     box_mass = 1.0
-    box_hdims = np.array([2,2,0.2])
 
-    box_id = 0
-    box_z = sphere_z + sphere_radius + box_hdims[2] + 0.05 * sphere_radius
-    print(box_z,sphere_z)
+    id = 0
+    box_z =  -1
     pos = np.array([0,0,box_z])
     theta=np.pi/8*0
     rot = np.array([np.cos(theta/2), 0,np.sin(theta/2),0])
-    model_params.add_box(pos, rot, box_hdims, box_mass, box_id)
+    model_params.add_box(pos, rot, np.array([10,10,0.1]), box_mass, id, fixed=True)
     print("Adding boxes")
     print("pos", pos)
-    print("hdims", box_hdims)
-
-    id = 1
-    for x in [-1,0,1]:
-        for y in [-1,0,1]:
-            if ((x * y == 0) and (x + y != 0) and addMiddle):
-                print ("what? ", x, y)
-                continue
-            pos = np.array([x,y,sphere_z])
-            rot = np.array([1,0,0,0])
-            model_params.add_sphere(pos, rot, sphere_mass, sphere_radius, id, fixed=True)
-            print("Adding sphere")
-            print("pos", pos)
-            print("radius", sphere_radius)
-            id += 1
-
-
-
-
+    id+=1
+    pos = np.array([0,0,0.2])
+    rot = np.array([1,0,0,0])
+    model_params.add_sphere(pos, rot, sphere_mass, sphere_radius, id, fixed=False)
+    print("Adding sphere")
+    print("pos", pos)
+    print("radius", sphere_radius)
 
     c_pos = np.array([])
     f_contact = np.array([])
@@ -125,7 +109,7 @@ def main(out_dir, push_fraction, unique, addMiddle):
     t_settling = model_params.time_end*0.5
     pushing = False
 
-    max_fric = box_mass * np.abs(np.linalg.norm(grav)) * model_params.static_friction
+    max_fric = sphere_mass * np.abs(np.linalg.norm(grav)) * model_params.static_friction
     f_push = push_fraction * max_fric
     out_fps = 100.0
     out_steps = 1.0 / (out_fps * model_params.dt)
@@ -155,16 +139,15 @@ def main(out_dir, push_fraction, unique, addMiddle):
             pushing = True
             # f=f_push*(t-t_settling)/model_params.time_end*2
             f=f_push
-            model_params.F_ext[6*box_id + 0] = +f
+            model_params.F_ext[6*id + 0] = +f
+            print(model_params.F_ext)
             print("Pushing with %f" % f)
-            # model_params.F_ext[6*box_id + 4] = -f*box_hdims[2]
+            model_params.F_ext[6*id + 4] = -f*sphere_radius
 
 
         new_q, new_v, new_a, c_pos, f_contact, B, pairs, gap, numIters= \
         integrate(model_params.q, model_params.v, model_params,\
                   warm_x=f_contact, random_initial=False)
-        print(f_contact)
-
         print("tst sum fn=",np.sum(f_contact[:,0]))
         print("tst sum ft1=",np.sum(f_contact[:,1]))
         print("tst sum ft2=",np.sum(f_contact[:,2]))
@@ -198,14 +181,6 @@ def main(out_dir, push_fraction, unique, addMiddle):
 
             print(slips_ft.shape)
 
-        if(f.shape[0]>0):
-            e=error(f[2,0], (f[0,0]+f[1,0]+f[3,0]+f[4,0])/4)
-            print("Normal compatibility check: error(f_middle, (f_righ+f_left)/4)= %.3e"
-                %(e)
-                )
-            import math
-            if(not math.isnan(e)):
-                err=np.append(err,e)
         # print(np.sum(f_contact,0))
         print("----------------------------------------------------------------")
 
@@ -297,11 +272,10 @@ def main(out_dir, push_fraction, unique, addMiddle):
     plt.show()
 if __name__ == '__main__':
     argv = sys.argv
-    if len(argv) != 4:
-        print("usage: " + argv[0] + " <out_dir> <push_fraction> <unique?>")
+    if len(argv) != 3:
+        print("usage: " + argv[0] + " <out_dir> <push_fraction>")
         exit(1)
 
     out_dir = argv[1]
     push_fraction = float(argv[2])
-    unique = bool(int(argv[3]))
     main(out_dir,push_fraction, False , 1)

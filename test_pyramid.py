@@ -44,7 +44,7 @@ def main(friction, out_dir, top_mass, unique):
         "prefix" : out_dir + "/step",
         "suffix" : ".csv"}
 
-    gran_params = params(setup)
+    model_params = params(setup)
 
     id = 1
     sphere_mass = 1.0
@@ -54,7 +54,7 @@ def main(friction, out_dir, top_mass, unique):
         for y in [-1.0,1.0]:
             pos = np.array([x,y,sphere_z])
             rot = np.array([1,0,0,0])
-            gran_params.add_sphere(pos, rot, sphere_mass, sphere_radius, id)
+            model_params.add_sphere(pos, rot, sphere_mass, sphere_radius, id)
             id += 1
 
     top_id = 0
@@ -62,7 +62,7 @@ def main(friction, out_dir, top_mass, unique):
     top_z = 1 + np.sqrt(top_radius**2 + 2 * top_radius * sphere_radius + sphere_radius**2 - 2)
     pos = np.array([0,0,top_z])
     rot = np.array([1,0,0,0])
-    gran_params.add_sphere(pos, rot, top_mass, top_radius, top_id)
+    model_params.add_sphere(pos, rot, top_mass, top_radius, top_id)
 
     box_id = 5
     box_mass = 4.0
@@ -70,13 +70,13 @@ def main(friction, out_dir, top_mass, unique):
     box_z = -0.5
     pos = np.array([0,0,box_z])
     rot = np.array([1,0,0,0])
-    gran_params.add_box(pos, rot, box_hdims, box_mass, box_id, fixed=True)
+    model_params.add_box(pos, rot, box_hdims, box_mass, box_id, fixed=True)
 
 
     c_pos = np.array([])
     f_contact = np.array([])
 
-    # print(gran_params)
+    # print(model_params)
 
     step = 0
     t = 0.0
@@ -84,25 +84,25 @@ def main(friction, out_dir, top_mass, unique):
     pushing = False
 
     out_fps = 100.0
-    out_steps = 1.0 / (out_fps * gran_params.dt)
+    out_steps = 1.0 / (out_fps * model_params.dt)
     frame = 0
-    while t < gran_params.time_end:
+    while t < model_params.time_end:
         if step % out_steps == 0:
             frame_s = '%06d' % frame
             print('Rendering frame ' + frame_s)
-            filename = gran_params.prefix + frame_s + gran_params.suffix
-            writeosprayfile(gran_params.q, gran_params.v, frame_s, gran_params)
-            filename = gran_params.prefix + frame_s + '_forces' + gran_params.suffix
+            filename = model_params.prefix + frame_s + model_params.suffix
+            writeosprayfile(model_params.q, model_params.v, frame_s, model_params)
+            filename = model_params.prefix + frame_s + '_forces' + model_params.suffix
             frame += 1
 
-        new_q, new_v, new_a, c_pos, f_contact = integrate(gran_params.q, gran_params.v, gran_params)
+        new_q, new_v, new_a, c_pos, f_contact = integrate(model_params.q, model_params.v, model_params)
 
-        gran_params.q = new_q
-        gran_params.v = new_v
-        if gran_params.q[7*top_id + 2] <= top_z / 2.0:
+        model_params.q = new_q
+        model_params.v = new_v
+        if model_params.q[7*top_id + 2] <= top_z / 2.0:
             return True
 
-        t += gran_params.dt
+        t += model_params.dt
         step += 1
     return False
 

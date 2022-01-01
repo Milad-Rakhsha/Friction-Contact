@@ -18,26 +18,39 @@ The cone complementarity solvers for contact dynamics problems.
 import numpy as np
 
 class solver():
-    def __init__(self,solver_params,const_N=np.array([])):
+    def __init__(self,solver_params,const_N=None,project_from_old_normal=False, old_forces=None, project_from_old_normal_oldTangents=False):
         self.const_Normals=const_N
+        self.old_forces=old_forces
         self.params=solver_params
         self.type=solver_params["type"]
         self.tolerance=solver_params["tolerance"]
         self.max_iterations=solver_params["max_iterations"]
-        if(self.const_Normals.shape[0]>0):
-            print("Using constant normals of ",const_N )
+        self.project_from_old_normal=project_from_old_normal
+        self.project_from_old_normal_oldTangents=project_from_old_normal_oldTangents
+        if(self.const_Normals is not None):
+            print("Using constant normals." )
+        if(project_from_old_normal):
+            print("Projecting from normals:")
+        if(project_from_old_normal):
+            print("Projecting from forces:")
 
 
-    def solve(self,N,p,x0,friction,eps):
+    def solve(self,N,p,x0,friction,eps, max_iterations=None):
+        if(max_iterations==None):
+            max_iterations=self.max_iterations
         if (self.type=="Gauss_Seidel"):
-            return self.Gauss_Seidel(N, p, friction, eps, self.max_iterations, x0, self.params["GS_omega"], self.params["GS_lambda"])
+            x, iter,res=self.Gauss_Seidel(N, p, friction, eps, max_iterations, x0, self.params["GS_omega"], self.params["GS_lambda"])
         elif (self.type=="Jacobi"):
-            return self.Jacobi(N, p, friction, eps, self.max_iterations, x0, self.params["Jacobi_omega"], self.params["Jacobi_lambda"])
-        elif (self.type=="APGD"):
-            return self.apgd(N, p, friction, eps, self.max_iterations, x0)
-        else:
-            return self.apgd_ref(N, p, friction, eps, self.max_iterations, x0)
+            x, iter,res=self.Jacobi(N, p, friction, eps, max_iterations, x0, self.params["Jacobi_omega"], self.params["Jacobi_lambda"])
 
+        elif (self.type=="APGD"):
+            x, iter,res=self.apgd(N, p, friction, eps, max_iterations, x0)
+        else:
+            x, iter,res=self.apgd_ref(N, p, friction, eps, max_iterations, x0)
+
+        # print("%s solver finished with %d iteration and residual of %.3g"%(self.type,iter,res ))
+
+        return x, iter,res
 
     def Jacobi(self,N, p, friction, tolerance, max_iterations, x, omega_=0.3, lambda_=0.9, g=1e-6):
         n = x.shape[0]
@@ -66,7 +79,36 @@ class solver():
             if res < tolerance:
                 break
 
-        return x, iter
+        return x, iter,res
+
+    # def Jacobi(self,N, p, friction, tolerance, max_iterations, x, omega_=0.3, lambda_=0.9, g=1e-6):
+    #     n = x.shape[0]
+    #     Nc = int(x.shape[0] / 3)
+    #     B = np.zeros(Nc*3)
+    #     for i in range(Nc):
+    #         s_i=3*i
+    #         e_i=3*i+3
+    #         g_i=np.sum( np.diag( N[s_i:e_i, s_i:e_i]) ) / 3.0
+    #         if(g_i!=0):
+    #             B[s_i:e_i] = np.ones(3) / g_i
+    #         else:
+    #             B[s_i:e_i] = np.ones(3)
+    #
+    #     for iter in range(max_iterations):
+    #         x_old = x.copy()
+    #
+    #         grad = self.f_grad(x, N, p)
+    #         # print(np.linalg.norm(B * grad))
+    #         x_hat=self.project(x - omega_ * B * grad , friction)
+    #         x=lambda_*x_hat+(1.0-lambda_)*x
+    #         res=np.linalg.norm(x_old-x)
+    #         # res = self.r4_error(x, N, p, friction, g)
+    #         # Sufficient accuracy reached
+    #         if res < tolerance:
+    #             break
+    #         # if(iter%10==0):
+    #         #     print("res:", res)
+    #     return x, iter,res
 
     def Gauss_Seidel(self,N, p, friction, tolerance, max_iterations, x, omega_=0.9, lambda_=0.9, g=1e-6):
         n = x.shape[0]
@@ -94,7 +136,7 @@ class solver():
                 # print("Gauss_Seidel converged to {} after {} iters.".format(res, iter))
                 break
 
-        return x, iter
+        return x, iter,res
 
 
     # Assumes N is symmetric
@@ -194,7 +236,7 @@ class solver():
 
         #(33) return Value at time step t_(l+1), gamma_(l+1) := gamma_hat
         gamma = gamma_hat
-        return gamma, iter
+        return gamma, iter, residual
 
     # Assumes N is symmetric
     def apgd(self,N, p, friction, tolerance, max_iterations, x0, g=1e-6):
@@ -247,7 +289,7 @@ class solver():
             L = 0.9 * L
             t = 1.0 / L
 
-        return x_best, iter
+        return x_best, iter, r
 
     def r4_error(self,x, N, p, friction, g):
         return np.linalg.norm( 1.0 / g * (x - self.project(x - g * self.f_grad(x, N, p), friction) ) )
@@ -258,23 +300,51 @@ class solver():
     def f_grad(self,x, N, p):
         return np.dot(N, x) + p
 
-    def project(self,x_in, friction):
+    def project2(self,x_in, friction):
         x = x_in.copy()
+        for i in range(int(x.shape[0] / 3)):
+            f = x[3*i : 3*i + 3]
+            ft = np.sqrt(f[1]**2 + f[2]**2)
+            mu = friction[i]
+            if ft <= mu *f[0] :
+                continue
+            if mu != 0.0 and ft < -f[0] / mu:
+                f[0:3] = np.zeros(3)
+            elif mu * f[0] < ft:
+                f[0] = (f[0] + mu * ft) / (mu**2 + 1)
+                f[1] = f[1] * mu * f[0] / ft
+                f[2] = f[2] * mu * f[0] / ft
 
-        if(self.const_Normals.shape[0]>0):
+        return x
+
+    def project(self, x_in, friction):
+        x = x_in.copy()
+        if(self.project_from_old_normal_oldTangents):
             for i in range(int(x.shape[0] / 3)):
-                f = x[3*i : 3*i + 3]
-                fn=self.const_Normals[i]
+                f = x[3*i : 3*i + 3] + self.old_forces[3*i:3*i+3]
+                # print(f, x[3*i : 3*i + 3],self.old_forces[3*i:3*i+3])
                 ft = np.sqrt(f[1]**2 + f[2]**2)
                 mu = friction[i]
-                if ft <= mu *fn :
-                    continue
-                if mu != 0.0 and ft < -fn / mu:
-                    f[0:3] = np.zeros(3)
-                elif mu * fn < ft:
-                    # f[0] = (fn + mu * ft) / (mu**2 + 1)
-                    f[1] = f[1] * mu * fn / ft
-                    f[2] = f[2] * mu * fn / ft
+                f_n_old= self.old_forces[3*i]
+                if f[0]<0 :
+                    f[0]=0
+                if ft > mu *f_n_old:
+                    f[1] = f[1] * mu * f_n_old / ft
+                    f[2] = f[2] * mu * f_n_old / ft
+                x[3*i : 3*i + 3]=  f - self.old_forces[3*i:3*i+3]
+
+        elif(self.project_from_old_normal):
+            for i in range(int(x.shape[0] / 3)):
+                f = x[3*i : 3*i + 3]
+                ft = np.sqrt(f[1]**2 + f[2]**2)
+                mu = friction[i]
+                f_n_old=self.const_Normals[i]
+                if f[0]<0 :
+                    f[0]=0
+                if ft > mu *f_n_old:
+                    f[1] = f[1] * mu * f_n_old / ft
+                    f[2] = f[2] * mu * f_n_old / ft
+                x[3*i : 3*i + 3]=  f
 
         else:
             for i in range(int(x.shape[0] / 3)):
@@ -285,9 +355,12 @@ class solver():
                     continue
                 if mu != 0.0 and ft < -f[0] / mu:
                     f[0:3] = np.zeros(3)
+                if mu == 0.0 and f[0]<0:
+                    f[0]=0
                 elif mu * f[0] < ft:
                     f[0] = (f[0] + mu * ft) / (mu**2 + 1)
                     f[1] = f[1] * mu * f[0] / ft
                     f[2] = f[2] * mu * f[0] / ft
-
+                    if(f[0]<0):
+                        print("incorrect projection:", f)
         return x

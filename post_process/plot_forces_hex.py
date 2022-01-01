@@ -20,7 +20,8 @@ MARKERSIZE=5
 
 
 path_DVI_python = str(sys.argv[1])
-label = str(sys.argv[2])
+# label = str(sys.argv[2])
+label = "forces"
 
 
 def prepare(path, prefix, suffix, prefix2, suffix2, pad):
@@ -47,8 +48,9 @@ def prepare(path, prefix, suffix, prefix2, suffix2, pad):
                         if(c_j==0):
                                 c_j=c_i
                                 c_i=0
+                        ft=np.sqrt(np.power(table['Ft1'][contact],2)+np.power(table['Ft2'][contact],2))
                         OUT[i,c_j*2-1]=table['Fn'][contact]
-                        OUT[i,c_j*2]=table['Ft'][contact]
+                        OUT[i,c_j*2]=ft
 
         return OUT
 
@@ -67,7 +69,7 @@ def plot(label,DVI_F):
         ax2 = fig.add_subplot(212)
         # ax3 = fig.add_subplot(313)
         fig.subplots_adjust(hspace=2.0)
-        color=['ro','bo','b','r-o','k', 'ko']
+        color=['r-o','bo','b','r-o','k', 'ko']
         count=0
         for i in [1,2,6]:
                 ax1.plot(DVI_F[:,0],DVI_F[:,i*2-1],
@@ -84,9 +86,9 @@ def plot(label,DVI_F):
         ax2.legend(fancybox=True, shadow=True, ncol=1)
         ax1.legend(fancybox=True, shadow=True, ncol=1)
         ax1.set_xlim(0, 0.5)
-        ax1.set_ylim(0, 0.6)
+        # ax1.set_ylim(0, 0.6)
         ax2.set_xlim(0, 0.5)
-        ax2.set_ylim(0, 0.2)
+        # ax2.set_ylim(0, 0.2)
 
         ax1.legend(loc='center right')
         ax2.legend(loc='center right')
@@ -102,7 +104,7 @@ def plot(label,DVI_F):
 
         # ax3.yaxis.set_major_formatter(FormatStrFormatter('%.0e'))
         # ax2.set_ylabel(r'$F$')
-        plt.savefig(label+'.png')
+        plt.savefig(os.path.join(path_DVI_python,label))
         #plt.show()
 
 

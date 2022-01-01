@@ -16,7 +16,9 @@ import numpy as np
 import sys
 import os,shutil
 
-from integrate import integrate
+# from integrate import integrate
+from integrate_new import integrate, error
+
 from IO_utils import writeParaviewFile,loadSparseMatrixFile,loadVectorFile
 from writeforcefile import writeforcefile_with_pairs
 from params import params
@@ -29,11 +31,11 @@ def main(out_dir, unique):
     else:
         os.mkdir(out_dir)
 
-    shutil.copyfile("./Cannonball.py", out_dir+"/input.py")
+    shutil.copyfile("./test_cannonball.py", out_dir+"/input.py")
 
 
     Nb=0
-    num_ball_x=6
+    num_ball_x=4
     num_ball=num_ball_x
 
     for i in range(1,num_ball_x+1):
@@ -62,6 +64,9 @@ def main(out_dir, unique):
         "tau_mu" : 1e-2,
         "tau_eps" : 1e-2,
         "dt" : 1e-3,
+        "eta0": 1e-3,
+        "tau_eta": 2.0,
+        "eta_max": 1e6,
         "time_end": 0.2,
         "prefix" : out_dir + "/",
         "suffix" : ".csv",
@@ -69,7 +74,7 @@ def main(out_dir, unique):
         "Reg_T_Dir": Reg_T_Dir,
         "solver": solver_params}
 
-    gran_params = params(setup)
+    model_params = params(setup)
     sphere_mass = 1.0
     sphere_radius = 0.1
     envelope = sphere_radius * 0.02;
@@ -81,7 +86,7 @@ def main(out_dir, unique):
             for y in range(0,num_ball):
                 pos = np.array([x*sphere_radius*2+shift, y*sphere_radius*2+shift, sphere_z])
                 rot = np.array([1,0,0,0])
-                gran_params.add_sphere(pos, rot, sphere_mass, sphere_radius, ballId, fixed=(num_ball==num_ball_x) )
+                model_params.add_sphere(pos, rot, sphere_mass, sphere_radius, ballId, fixed=(num_ball==num_ball_x) )
                 # print("Adding sphere")
                 # print("pos", pos)
                 # print("radius", sphere_radius)
@@ -97,36 +102,36 @@ def main(out_dir, unique):
     pairs = np.array([])
     gap = np.array([])
 
-    print(gran_params)
+    print(model_params)
 
     step = 0
     t = 0.0
 
 
     out_fps = 100.0
-    out_steps = 1.0 / (out_fps * gran_params.dt)
+    out_steps = 1.0 / (out_fps * model_params.dt)
     frame = 0
-    while t <= gran_params.time_end:
+    while t <= model_params.time_end:
         if step % out_steps == 0:
             frame_s = '%03d' % frame
             print('t=%f, Rendering frame %s' %(t,frame_s))
-            filename = gran_params.prefix + frame_s + gran_params.suffix
-            writeParaviewFile(gran_params.q, gran_params.v, frame_s, gran_params)
-            filename = gran_params.prefix + frame_s + '_forces' + gran_params.suffix
-            writeforcefile_with_pairs(pairs, f_contact,gap, frame_s, gran_params)
+            filename = model_params.prefix + frame_s + model_params.suffix
+            writeParaviewFile(model_params.q, model_params.v, frame_s, model_params)
+            filename = model_params.prefix + frame_s + '_forces' + model_params.suffix
+            writeforcefile_with_pairs(pairs, f_contact,gap, frame_s, model_params)
             frame += 1
 
 
         new_q, new_v, new_a, c_pos, f_contact, B, pairs, gap, numIters= \
-        integrate(gran_params.q, gran_params.v, gran_params,\
+        integrate(model_params.q, model_params.v, model_params,\
                   warm_x=f_contact, random_initial=False)
-        print("t=%.3e, %s, total_solver_iter=%d"% (t, gran_params.solver["type"], numIters))
+        print("t=%.3e, %s, total_solver_iter=%d"% (t, model_params.solver["type"], numIters))
         print("----------------------------------------------------------------")
 
-        gran_params.q = new_q
-        gran_params.v = new_v
+        model_params.q = new_q
+        model_params.v = new_v
 
-        t += gran_params.dt
+        t += model_params.dt
         step += 1
 
 
@@ -141,4 +146,4 @@ if __name__ == '__main__':
     Reg_T_Dir = bool(int(argv[3]))
 
     print ("unique solution?", unique)
-    main(out_dir, unique)
+    main(out_dir, False)

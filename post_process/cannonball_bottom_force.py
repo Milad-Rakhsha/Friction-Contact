@@ -79,11 +79,11 @@ def plot(x,y,z,idx,saveName,size):
     plt.close()
 
 
-FRAME=96
-size=3
+FRAME=20
+size=6
 dt=1e-3
 
-out_dir="test_cannonball/%d/"%(size-1)
+out_dir="Example7/%d/"%(size-1)
 
 if os.path.exists(out_dir):
     shutil.rmtree(out_dir)
@@ -91,24 +91,19 @@ if os.path.exists(out_dir):
 else:
     os.mkdir(out_dir)
 
-# DEM_F=prepare(path_DVI, FRAME, size, '/CannonballSMC_%dparticle/F_SCM_body_'%(size-1), '.txt', False)
-# DVI_F1=prepare(path_DEM, FRAME, size, '/NSC_0_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
-# DVI_F2=prepare(path_DEM, FRAME, size, '/NSC_01_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
-# DVI_F3=prepare(path_DEM, FRAME, size, '/NSC_05_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
-# DVI_F4=prepare(path_DEM, FRAME, size, '/NSC_1_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
-# DVI_F5=prepare(path_DEM, FRAME, size, '/NSC_5_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
-
-DVI_=prepare(path_DVI, FRAME, size, '/force_body_', '.csv', True)
+DEM_F=prepare(path_DVI, FRAME, size, '/CannonballSMC_%dparticle/F_SCM_body_'%(size-1), '.txt', False)
+DVI_F1=prepare(path_DEM, FRAME, size, '/NSC_0_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
+DVI_F2=prepare(path_DEM, FRAME, size, '/NSC_01_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
+DVI_F3=prepare(path_DEM, FRAME, size, '/NSC_05_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
+DVI_F4=prepare(path_DEM, FRAME, size, '/NSC_1_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
+DVI_F5=prepare(path_DEM, FRAME, size, '/NSC_5_%dParticle/F_NSC_body_'%(size-1), '.txt', False)
 
 
-# inputs=[DEM_F, DVI_F1, DVI_F2, DVI_F3, DVI_F4, DVI_F5]
-# alpha=[0, 0.0, 0.1, 0.5, 1.0, 5.0]
-# title=['DEM','DVI', 'DVI', 'DVI', 'DVI', 'DVI']
+inputs=[DEM_F, DVI_F1, DVI_F2, DVI_F3, DVI_F4, DVI_F5]
+alpha=[0, 0.0, 0.1, 0.5, 1.0, 5.0]
+title=['DEM','DVI', 'DVI', 'DVI', 'DVI', 'DVI']
 
 
-inputs=[DVI_]
-alpha=[0]
-title=['DVI']
 
 
 for data,ti,al in zip(inputs,title,alpha):

@@ -30,7 +30,7 @@ setup = {"nb": 2, "gravity" : grav, \
     "prefix" : "data/step", \
     "suffix" : ".csv"}
 
-gran_params = params(setup)
+model_params = params(setup)
 
 sphere_id = 1
 sphere_pos = np.array([0,0,-1])
@@ -40,39 +40,39 @@ sphere_radius = 1
 
 box_id = 0
 box_hdims = np.array([1,1,1])
-box_z = sphere_radius + box_hdims[2] + 0.5 * gran_params.envelope
+box_z = sphere_radius + box_hdims[2] + 0.5 * model_params.envelope
 box_pos = np.array([0.1,0,box_z])
 box_rot = np.array([1,0,0,0])
 box_mass = 4.0
 
-gran_params.add_box(box_pos, box_rot, box_hdims, box_mass, box_id)
-gran_params.add_sphere(sphere_pos, sphere_rot, sphere_mass, sphere_radius, sphere_id, fixed=True)
+model_params.add_box(box_pos, box_rot, box_hdims, box_mass, box_id)
+model_params.add_sphere(sphere_pos, sphere_rot, sphere_mass, sphere_radius, sphere_id, fixed=True)
 
 c_pos = np.array([])
 f_contact = np.array([])
 
-print(gran_params)
+print(model_params)
 
 step = 0
 t = 0.0
 t_settling = 0.1
 out_fps = 100.0
-out_steps = 1.0 / (out_fps * gran_params.dt)
+out_steps = 1.0 / (out_fps * model_params.dt)
 frame = 0
-while t < gran_params.time_end:
+while t < model_params.time_end:
     if step % out_steps == 0:
         frame_s = '%06d' % frame
         print('Rendering frame ' + frame_s)
-        filename = gran_params.prefix + frame_s + gran_params.suffix
-        writeosprayfile(gran_params.q, gran_params.v, frame_s, gran_params)
-        filename = gran_params.prefix + frame_s + '_forces' + gran_params.suffix
-        writeforcefile(c_pos, f_contact, filename, gran_params)
+        filename = model_params.prefix + frame_s + model_params.suffix
+        writeosprayfile(model_params.q, model_params.v, frame_s, model_params)
+        filename = model_params.prefix + frame_s + '_forces' + model_params.suffix
+        writeforcefile(c_pos, f_contact, filename, model_params)
         frame += 1
 
-    new_q, new_v, new_a, c_pos, f_contact = integrate(gran_params.q, gran_params.v, gran_params)
+    new_q, new_v, new_a, c_pos, f_contact = integrate(model_params.q, model_params.v, model_params)
 
-    gran_params.q = new_q
-    gran_params.v = new_v
+    model_params.q = new_q
+    model_params.v = new_v
 
-    t += gran_params.dt
+    t += model_params.dt
     step += 1

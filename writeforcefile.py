@@ -12,7 +12,7 @@
 # Contributors: Nic Olsen, Milad Rakhsha
 # =============================================================================
 """
-Writes contact forces to files 
+Writes contact forces to files
 """
 import numpy as np
 def writeforcefile(c_pos, f_contact, filename, params):
@@ -27,12 +27,32 @@ def writeforcefile(c_pos, f_contact, filename, params):
             file.write(','.join(out) + '\n')
 
 
-def writeforcefile_with_pairs(contact_pair, f_contact, phi, frame, params):
+def writeforcefile_with_pairs(contact_pair, f_contact,phi, frame, params):
     file= open(params.prefix  + "force" +frame + params.suffix, 'w')
-    file.write('bi,bj,Fn,Ft,phi\n')
+    file.write('bi,bj,Fn,Ft1,Ft2,x,y,z,nx,ny,nz,phi\n')
+
     if len(f_contact) != 0:
         for i in range(f_contact.shape[0]):
-            out = [str(contact_pair[i][j]) for j in range(2)] + [str(f_contact[i,0]),str(np.linalg.norm(f_contact[i,1:2],2))] + [str(phi[i])]
+            out = [str(contact_pair[i][j]) for j in range(2)] +\
+                  [str(f_contact[i,j]) for j in range(3)] +\
+                  [str(phi[i])]
+            file.write(','.join(out) + '\n')
+    else:
+        pass
+
+def writeFullforcefile(contact_pair, f_contact, c_pos, B, phi, frame, params):
+    file= open(params.prefix  + "force" +frame + params.suffix, 'w')
+    file.write('bi,bj,Fn,Ft1,Ft2,x,y,z,nx,ny,nz,phi\n')
+
+    if len(f_contact) != 0:
+        for i in range(f_contact.shape[0]):
+            n=B[3*i, 6*contact_pair[i][0] : 6*contact_pair[i][0] + 3]
+            c_point=c_pos[3*i : 3*i + 3]
+            out = [str(contact_pair[i][j]) for j in range(2)] +\
+                  [str(f_contact[i,j]) for j in range(3)] +\
+                  [str(c_point[j]) for j in range(3)] +\
+                  [str(n[j]) for j in range(3)] +\
+                  [str(phi[i])]
             file.write(','.join(out) + '\n')
     else:
         pass

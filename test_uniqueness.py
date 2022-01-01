@@ -50,7 +50,7 @@ def main(out_dir, push_fraction, unique):
         "prefix" : out_dir + "/step",
         "suffix" : ".csv"}
 
-    gran_params = params(setup)
+    model_params = params(setup)
 
     sphere_mass = 1.0
     sphere_z = -1
@@ -59,17 +59,17 @@ def main(out_dir, push_fraction, unique):
     box_hdims = np.array([2,2,0.25])
 
     box_id = 0
-    box_z = sphere_z + sphere_radius + box_hdims[2] + 0.5 * gran_params.envelope
+    box_z = sphere_z + sphere_radius + box_hdims[2] + 0.5 * model_params.envelope
     pos = np.array([0,0,box_z])
     rot = np.array([1,0,0,0])
-    gran_params.add_box(pos, rot, box_hdims, box_mass, box_id)
+    model_params.add_box(pos, rot, box_hdims, box_mass, box_id)
 
     id = 1
     for x in [-1,1]:
         for y in [-1,1]:
             pos = np.array([x,y,sphere_z])
             rot = np.array([1,0,0,0])
-            gran_params.add_sphere(pos, rot, sphere_mass, sphere_radius, id, fixed=True)
+            model_params.add_sphere(pos, rot, sphere_mass, sphere_radius, id, fixed=True)
             id += 1
 
     c_pos = np.array([])
@@ -83,19 +83,19 @@ def main(out_dir, push_fraction, unique):
     contact_forces = []
     np.random.seed(0)
     pushing = False
-    max_fric = box_mass * np.abs(np.linalg.norm(grav)) * gran_params.static_friction
+    max_fric = box_mass * np.abs(np.linalg.norm(grav)) * model_params.static_friction
     f_push = push_fraction * max_fric
 
     out_fps = 100.0
-    out_steps = 1.0 / (out_fps * gran_params.dt)
+    out_steps = 1.0 / (out_fps * model_params.dt)
     frame = 0
-    while t < gran_params.time_end:
+    while t < model_params.time_end:
         if step % out_steps == 0:
             frame_s = '%06d' % frame
             print("t= %f, rendering frame %s \n" %(t, frame_s) )
-            filename = gran_params.prefix + frame_s + gran_params.suffix
-            writeosprayfile(gran_params.q, gran_params.v, frame_s, gran_params)
-            writeParaviewFile(gran_params.q, gran_params.v, frame_s, gran_params)
+            filename = model_params.prefix + frame_s + model_params.suffix
+            writeosprayfile(model_params.q, model_params.v, frame_s, model_params)
+            writeParaviewFile(model_params.q, model_params.v, frame_s, model_params)
 
             frame += 1
 
@@ -103,23 +103,23 @@ def main(out_dir, push_fraction, unique):
             print("Pushing with %f" % f_push)
             print("slip") if f_push > max_fric else print("stick")
             pushing = True
-            gran_params.F_ext[6*box_id + 0] = f_push
+            model_params.F_ext[6*box_id + 0] = f_push
 
 
-        new_q, new_v, new_a, c_pos, f_contact = integrate(gran_params.q, gran_params.v, gran_params, random_initial=True)
+        new_q, new_v, new_a, c_pos, f_contact = integrate(model_params.q, model_params.v, model_params, random_initial=True)
 
         if t <= t_settling:
-            gran_params.q = new_q
-            gran_params.v = new_v
+            model_params.q = new_q
+            model_params.v = new_v
         else:
-            gran_params.unique = unique
+            model_params.unique = unique
             print("applying tikhonov regularization : ",unique)
             contact_forces.append(f_contact)
             repeated_step += 1
         if repeated_step == n_repeated_steps:
             break
 
-        t += gran_params.dt
+        t += model_params.dt
         step += 1
 
     for i,f in enumerate(contact_forces):

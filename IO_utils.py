@@ -98,12 +98,14 @@ def writeParaviewFile(q, v, frame, params):
 
     file_box.write("# vtk DataFile Version 2.0\nUnstructured Grid Example\nASCII\nDATASET UNSTRUCTURED_GRID\n")
     file_box.write("POINTS "+str(numbox*8)+ " float\n")
+    boxes=[]
     for i in range(params.nb):
             if(params.objs[i]=="box.obj"):
+                boxes.append(i)
                 pos=q[7*i:7*i+3]
                 vel=v[6*i:6*i+3]+1e-20
                 quat=q[7*i+3:7*i+7]
-                print("rotation:", quat)
+                # print("rotation:", quat)
                 hdim=params.hdims[i]
                 for k in (-1,+1):
                     for j in (-1,+1):
@@ -113,15 +115,13 @@ def writeParaviewFile(q, v, frame, params):
                             file_box.write( "%f %f %f\n" % (node_local[0],node_local[1],node_local[2]) )
 
     file_box.write("\nCELLS "+str(numbox)+ " " + str(numbox*9)+ "\n")
-    for i in range(params.nb):
-                if(params.objs[i]=="box.obj"):
-                    node=8*i
-                    file_box.write( "8 %d %d %d %d %d %d %d %d\n" % (node,node+1,node+3,node+2,node+4,node+5,node+7,node+6))
+    for i in range(len(boxes)):
+            node=8*i
+            file_box.write( "8 %d %d %d %d %d %d %d %d\n" % (node,node+1,node+3,node+2,node+4,node+5,node+7,node+6))
 
     file_box.write("\nCELL_TYPES "+str(numbox)+ "\n")
-    for i in range(params.nb):
-                if(params.objs[i]=="box.obj"):
-                    file_box.write( "12\n")
+    for i in boxes:
+                file_box.write( "12\n")
 
 
     file_box.write("\nPOINT_DATA "+str(numbox*8))
