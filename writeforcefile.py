@@ -14,44 +14,46 @@
 """
 Writes contact forces to files
 """
-import numpy as np
+
+
 def writeforcefile(c_pos, f_contact, filename, params):
     with open(filename, 'w') as file:
         file.write('cx,cy,cz,fn,fu,fw\n')
         if len(f_contact) != 0:
             for i in range(f_contact.shape[0]):
-                out = [str(c_pos[i*3 + j]) for j in range(3)] + [str(f_contact[i,j]) for j in range(3)]
+                out = [str(c_pos[i * 3 + j]) for j in range(3)] + [str(f_contact[i, j]) for j in range(3)]
                 file.write(','.join(out) + '\n')
         else:
-            out = [str(0.0)]*6
+            out = [str(0.0)] * 6
             file.write(','.join(out) + '\n')
 
 
-def writeforcefile_with_pairs(contact_pair, f_contact,phi, frame, params):
-    file= open(params.prefix  + "force" +frame + params.suffix, 'w')
+def writeforcefile_with_pairs(contact_pair, f_contact, phi, frame, params):
+    file = open(params.prefix + "force" + frame + params.suffix, 'w')
     file.write('bi,bj,Fn,Ft1,Ft2,x,y,z,nx,ny,nz,phi\n')
 
     if len(f_contact) != 0:
         for i in range(f_contact.shape[0]):
-            out = [str(contact_pair[i][j]) for j in range(2)] +\
-                  [str(f_contact[i,j]) for j in range(3)] +\
+            out = [str(contact_pair[i][j]) for j in range(2)] + \
+                  [str(f_contact[i, j]) for j in range(3)] + \
                   [str(phi[i])]
             file.write(','.join(out) + '\n')
     else:
         pass
 
+
 def writeFullforcefile(contact_pair, f_contact, c_pos, B, phi, frame, params):
-    file= open(params.prefix  + "force" +frame + params.suffix, 'w')
+    file = open(params.prefix + "force" + frame + params.suffix, 'w')
     file.write('bi,bj,Fn,Ft1,Ft2,x,y,z,nx,ny,nz,phi\n')
 
     if len(f_contact) != 0:
         for i in range(f_contact.shape[0]):
-            n=B[3*i, 6*contact_pair[i][0] : 6*contact_pair[i][0] + 3]
-            c_point=c_pos[3*i : 3*i + 3]
-            out = [str(contact_pair[i][j]) for j in range(2)] +\
-                  [str(f_contact[i,j]) for j in range(3)] +\
-                  [str(c_point[j]) for j in range(3)] +\
-                  [str(n[j]) for j in range(3)] +\
+            n = B[3 * i, 6 * contact_pair[i][0]: 6 * contact_pair[i][0] + 3]
+            c_point = c_pos[3 * i: 3 * i + 3]
+            out = [str(contact_pair[i][j]) for j in range(2)] + \
+                  [str(f_contact[i, j]) for j in range(3)] + \
+                  [str(c_point[j]) for j in range(3)] + \
+                  [str(n[j]) for j in range(3)] + \
                   [str(phi[i])]
             file.write(','.join(out) + '\n')
     else:

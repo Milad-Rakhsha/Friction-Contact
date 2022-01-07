@@ -17,18 +17,19 @@ import box_sphere as bs
 import sphere_sphere as ss
 from params import Shape
 
+
 def buildB(q, params):
     # Count contacts
     n_contacts = 0
-    contact_pair=np.array([[0,0]])
+    contact_pair = np.array([[0, 0]])
     for i in range(params.nb):
-        posA = q[7*i : 7*i + 3]
-        rotA = q[7*i + 3: 7*i + 7]
+        posA = q[7 * i: 7 * i + 3]
+        rotA = q[7 * i + 3: 7 * i + 7]
         shapeA = params.shapes[i]
         fixedA = params.fixed[i]
-        for j in range(i+1,params.nb):
-            posB = q[7*j : 7*j + 3]
-            rotB = q[7*j + 3 : 7*j + 7]
+        for j in range(i + 1, params.nb):
+            posB = q[7 * j: 7 * j + 3]
+            rotB = q[7 * j + 3: 7 * j + 7]
             shapeB = params.shapes[j]
             fixedB = params.fixed[j]
 
@@ -49,24 +50,25 @@ def buildB(q, params):
                 exit(1)
 
             if collide:
-                contact_pair=np.append(contact_pair, [[i, j]], axis=0)
+                contact_pair = np.append(contact_pair, [[i, j]], axis=0)
                 n_contacts += 1
-    contact_pair = np.delete(contact_pair, 0, axis = 0)
+    contact_pair = np.delete(contact_pair, 0, axis=0)
 
     phi = np.zeros(n_contacts)
-    B = np.zeros((3 * n_contacts, 6 * params.nb), dtype='d') # TODO consider sparse
+    B = np.zeros((3 * n_contacts, 6 * params.nb), dtype='d')  # TODO consider sparse
     c_pos = np.zeros(3 * n_contacts, dtype='d')
-    contact_static_fric = np.full(n_contacts, params.static_friction, dtype='d') # TODO need to combine - this assumes all are same
+    contact_static_fric = np.full(n_contacts, params.static_friction,
+                                  dtype='d')  # TODO need to combine - this assumes all are same
     contact_i = 0
 
     for i in range(params.nb):
-        posA = q[7*i : 7*i + 3]
-        rotA = q[7*i + 3: 7*i + 7]
+        posA = q[7 * i: 7 * i + 3]
+        rotA = q[7 * i + 3: 7 * i + 7]
         shapeA = params.shapes[i]
         fixedA = params.fixed[i]
-        for j in range(i+1,params.nb):
-            posB = q[7*j : 7*j + 3]
-            rotB = q[7*j + 3 : 7*j + 7]
+        for j in range(i + 1, params.nb):
+            posB = q[7 * j: 7 * j + 3]
+            rotB = q[7 * j + 3: 7 * j + 7]
             shapeB = params.shapes[j]
             fixedB = params.fixed[j]
 
@@ -121,33 +123,33 @@ def buildB(q, params):
                 b_n = np.cross(s_b, n)
 
                 if not params.fixed[i]:
-                    B[3*contact_i, 6*i : 6*i + 3] = -n
-                    B[3*contact_i, 6*i + 3 : 6*i + 6] = a_n
+                    B[3 * contact_i, 6 * i: 6 * i + 3] = -n
+                    B[3 * contact_i, 6 * i + 3: 6 * i + 6] = a_n
                 if not params.fixed[j]:
-                    B[3*contact_i, 6*j : 6*j + 3] = n
-                    B[3*contact_i, 6*j + 3 : 6*j + 6] = b_n
+                    B[3 * contact_i, 6 * j: 6 * j + 3] = n
+                    B[3 * contact_i, 6 * j + 3: 6 * j + 6] = b_n
 
                 # B_{i,u}
                 a_u = np.cross(u, s_a)
                 b_u = np.cross(s_b, u)
                 if not params.fixed[i]:
-                    B[3*contact_i + 1, 6*i : 6*i + 3] = -u
-                    B[3*contact_i + 1, 6*i + 3 : 6*i + 6] = a_u
+                    B[3 * contact_i + 1, 6 * i: 6 * i + 3] = -u
+                    B[3 * contact_i + 1, 6 * i + 3: 6 * i + 6] = a_u
                 if not params.fixed[j]:
-                    B[3*contact_i + 1, 6*j : 6*j + 3] = u
-                    B[3*contact_i + 1, 6*j + 3 : 6*j + 6] = b_u
+                    B[3 * contact_i + 1, 6 * j: 6 * j + 3] = u
+                    B[3 * contact_i + 1, 6 * j + 3: 6 * j + 6] = b_u
 
                 # B_{i,w}
                 a_w = np.cross(w, s_a)
                 b_w = np.cross(s_b, w)
                 if not params.fixed[i]:
-                    B[3*contact_i + 2, 6*i : 6*i + 3] = -w
-                    B[3*contact_i + 2, 6*i + 3 : 6*i + 6] = a_w
+                    B[3 * contact_i + 2, 6 * i: 6 * i + 3] = -w
+                    B[3 * contact_i + 2, 6 * i + 3: 6 * i + 6] = a_w
                 if not params.fixed[j]:
-                    B[3*contact_i + 2, 6*j : 6*j + 3] = w
-                    B[3*contact_i + 2, 6*j + 3 : 6*j + 6] = b_w
+                    B[3 * contact_i + 2, 6 * j: 6 * j + 3] = w
+                    B[3 * contact_i + 2, 6 * j + 3: 6 * j + 6] = b_w
 
-                c_pos[3*contact_i : 3*contact_i + 3] = contact_pt
+                c_pos[3 * contact_i: 3 * contact_i + 3] = contact_pt
                 contact_i += 1
 
     return B, phi, n_contacts, c_pos, contact_static_fric, contact_pair

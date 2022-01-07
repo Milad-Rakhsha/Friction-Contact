@@ -17,6 +17,7 @@ The following is taken from ProjectChrono NarrowphaseR
 """
 import numpy as np
 
+
 def box_sphere(pos1, rot1, hdims1, pos2, radius2, separation):
     # Hardcoded edge_radius
     edge_radius = 1e-6
@@ -48,6 +49,7 @@ def box_sphere(pos1, rot1, hdims1, pos2, radius2, separation):
 
     return [True, depth, eff_radius, norm, pt1, pt2]
 
+
 def snap_to_box(hdims, loc):
     code = 0
     if np.abs(loc[0]) > hdims[0]:
@@ -62,16 +64,20 @@ def snap_to_box(hdims, loc):
 
     return code
 
+
 def TransformParentToLocal(p, q, rp):
     return RotateT(np.subtract(rp, p), q)
 
+
 def TransformLocalToParent(p, q, rl):
     return p + Rotate(rl, q)
+
 
 def RotateT(v, q):
     q_prime = q.copy()
     q_prime[1:] *= -1
     return Rotate(v, q_prime)
+
 
 def Rotate(v, q):
     t = 2 * np.cross(q[1:], v)

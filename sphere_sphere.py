@@ -13,10 +13,11 @@
 # =============================================================================
 import numpy as np
 
+
 def sphere_sphere(pos1, radius1, pos2, radius2, separation):
     delta = pos2 - pos1
     dist = np.linalg.norm(delta)
-    depth = dist - (radius1 + radius2) # TODO separation
+    depth = dist - (radius1 + radius2)  # TODO separation
     # collide = (depth <= 0.0)
     collide = (depth <= separation)
 
